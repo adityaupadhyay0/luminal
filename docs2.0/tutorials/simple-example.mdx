@@ -1,0 +1,117 @@
+---
+title: 'Tutorial: A Simple Neural Network'
+description: 'Learn the basics of Luminal by building a simple neural network from scratch.'
+icon: 'graduation-cap'
+---
+
+This tutorial will guide you through the process of building and running a very simple neural network using Luminal. We will be dissecting the `simple` example from the `examples` directory.
+
+By the end of this tutorial, you will understand:
+- The role of the `Graph` in Luminal.
+- How to define tensors and operations.
+- How to build a simple model using `luminal_nn`.
+- The difference between graph definition and execution.
+
+## The Code
+
+Let's start with the full code from `examples/simple/src/main.rs`, simplified for clarity:
+
+```rust
+use luminal::prelude::*;
+use luminal_nn::Linear;
+use rand::{rng, Rng};
+use itertools::Itertools;
+
+fn main() {
+    let mut rng = rng();
+    let weight = (0..4 * 5).map(|_| rng.random()).collect_vec();
+    // 1. Create a new graph
+    let mut cx = Graph::new();
+    // 2. Define the model
+    let model = Linear::new(4, 5, false, &mut cx);
+    model.weight.set(weight.clone());
+    // 3. Create an input tensor
+    let a = cx.tensor(4).set(vec![1., 2., 3., 4.]);
+    // 4. Define the forward pass
+    let b = model.forward(a).retrieve();
+
+    // 5. Execute the graph
+    cx.execute_debug();
+
+    // 6. Print the results
+    println!("B: {:?}", b.data());
+}
+```
+
+## Step-by-Step Explanation
+
+### Imports
+
+```rust
+use luminal::prelude::*;
+use luminal_nn::Linear;
+use rand::{rng, Rng};
+use itertools::Itertools;
+```
+We start by importing the necessary components.
+- `luminal::prelude::*`: This imports the most common items from the core `luminal` crate.
+- `luminal_nn::Linear`: This imports the `Linear` layer module from the `luminal_nn` crate.
+- `rand` and `itertools`: These are used for generating random weights and collecting them into a vector.
+
+### 1. The Computation Graph
+
+```rust
+let mut cx = Graph::new();
+```
+The `Graph` is the heart of any Luminal program. It's a data structure that holds the entire computation you want to perform. When you define tensors and operations, you are adding them to this graph. `cx` is a common abbreviation for "context" or "graph context".
+
+### 2. Defining the Model
+
+```rust
+let model = Linear::new(4, 5, false, &mut cx);
+model.weight.set(weight.clone());
+```
+Here, we create a `Linear` layer. This is a standard fully-connected neural network layer.
+- `Linear::new(4, 5, false, &mut cx)`: This creates a new linear layer that takes 4 input features and produces 5 output features. The `false` argument indicates that we don't want a bias term. We also pass a mutable reference to our graph `cx`, which tells the layer to register its operations and weights on this graph.
+- `model.weight.set(weight.clone())`: We then set the weights of the layer to a vector of random floating-point numbers.
+
+### 3. The Input Tensor
+
+```rust
+let a = cx.tensor(4).set(vec![1., 2., 3., 4.]);
+```
+This line creates a tensor, which is the primary data structure for multi-dimensional arrays in Luminal.
+- `cx.tensor(4)`: This creates a tensor of size 4 on the graph `cx`.
+- `.set(vec![1., 2., 3., 4.])`: This initializes the tensor with the given values.
+
+### 4. The Forward Pass
+
+```rust
+let b = model.forward(a).retrieve();
+```
+This is where we define the actual computation.
+- `model.forward(a)`: This calls the `forward` method of our `Linear` layer, passing our input tensor `a`. This adds the matrix multiplication operation to the graph.
+- `.retrieve()`: This is a crucial method. It marks the tensor `b` as an output tensor. This means we want to be able to read its value after the graph has been executed.
+
+**Important**: At this point, no actual computation has been performed. We have only described the computation we want to do by building up the graph.
+
+### 5. Graph Execution
+
+```rust
+cx.execute_debug();
+```
+This is the moment of truth. The `execute()` (or `execute_debug()`) method tells Luminal to take the graph we've built, compile it into optimized code for the target hardware (CPU, GPU, etc.), and run it.
+
+### 6. Retrieving the Result
+
+```rust
+println!("B: {:?}", b.data());
+```
+Now that the graph has been executed, the output tensor `b` contains the result of the computation. We can access the data using the `.data()` method and print it.
+
+## Experiment!
+
+Try changing the code to see what happens.
+- Change the input tensor values.
+- Change the size of the linear layer.
+- Add another linear layer to create a multi-layer perceptron.

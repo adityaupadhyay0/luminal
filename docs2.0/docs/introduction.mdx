@@ -1,0 +1,63 @@
+---
+title: Introduction
+description: 'Deep learning at the speed of light.'
+icon: 'hand-wave'
+---
+
+<img
+  className="block dark:hidden rounded-xl"
+  src="/images/abstract_light.jpg"
+  alt="Hero Light"
+/>
+<img
+  className="hidden dark:block rounded-xl"
+  src="/images/abstract.jpg"
+  alt="Hero Dark"
+/>
+
+## What is Luminal?
+
+Luminal is a deep learning library that **generates optimized code** to achieve high performance. It is designed with three core principles in mind: **speed**, **simplicity**, and **composability**.
+
+Unlike traditional deep learning libraries that execute operations eagerly, Luminal takes a different approach. When you write Luminal code, you are not immediately executing computations. Instead, you are building a static computation graph. This graph represents the entire set of operations for your neural network.
+
+```rust
+use luminal::prelude::*;
+
+// Setup graph and tensors
+let mut cx = Graph::new();
+let a = cx.tensor((3, 1)).set([[1.0], [2.0], [3.0]]);
+let b = cx.tensor((1, 4)).set([[1.0, 2.0, 3.0, 4.0]]);
+
+// Do math...
+let mut c = a.matmul(b).retrieve();
+
+// Compile and run graph
+cx.compile(<(GenericCompiler, CPUCompiler)>::default(), &mut c);
+cx.execute();
+
+// Get result
+println!("Result: {:?}", c);
+```
+
+This graph-based, ahead-of-time compilation approach allows Luminal to have global knowledge of the entire computation, enabling powerful optimizations that are difficult to achieve in eager-execution frameworks.
+
+## Core Principles
+
+### Ahead-of-Time (AOT) Compilation
+A core tenet of Luminal is to push as much work as possible to compile time. By defining the entire neural network as a static graph, Luminal's compilers can perform aggressive optimizations, such as:
+- Kernel fusion to reduce overhead.
+- Shape-specific kernel generation at runtime.
+- Abstracting away device and data type complexities.
+
+This approach is similar to frameworks like XLA and tinygrad, and it allows for writing generic, high-level network definitions that can be compiled into hyper-specific, high-performance code for various hardware backends.
+
+### RISC-style Architecture
+Simplicity is key. Luminal's core is built on a minimal set of just 12 primitive operations. This small instruction set is sufficient to build complex models like Transformers and ConvNets. The complexity is handled by the compilers, which fuse these simple ops into high-performance GPU kernels.
+
+## Key Features
+
+- **Speed**: Optimized for high performance on various hardware, including Apple Silicon and Nvidia GPUs.
+- **Simplicity**: A minimal core library that is easy to understand and extend.
+- **Native Performance**: Written in Rust, Luminal interacts directly with CUDA and Metal APIs, avoiding layers of abstraction for maximum performance.
+- **Correctness**: Rigorously tested against PyTorch to ensure correctness.
