@@ -1,0 +1,114 @@
+---
+title: 'Quickstart'
+description: 'Start running ML models in minutes.'
+icon: 'bolt'
+---
+
+This guide will walk you through setting up your environment, running your first Luminal program, and running a large language model.
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+- [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+- [Rust](https://www.rust-lang.org/tools/install)
+
+## Clone the Repository
+
+First, clone the Luminal repository to your local machine:
+
+```bash
+git clone https://github.com/jafioti/luminal
+cd luminal
+```
+
+## "Hello World": Your First Luminal Program
+
+The `simple` example in the `examples` directory is a great place to start. It demonstrates the fundamental concepts of Luminal: creating a computation graph, defining operations, and executing it.
+
+To run the example, execute the following command from the root of the repository:
+
+```bash
+cargo run --release --example simple
+```
+
+You should see some output, including a tensor with 5 floating-point numbers.
+
+### Understanding the Code
+
+Here is the code from `examples/simple/src/main.rs`, simplified for clarity:
+
+```rust
+use luminal::prelude::*;
+use luminal_nn::Linear;
+use rand::{rng, Rng};
+use itertools::Itertools;
+
+fn main() {
+    let mut rng = rng();
+    let weight = (0..4 * 5).map(|_| rng.random()).collect_vec();
+    // Create a new graph
+    let mut cx = Graph::new();
+    // Randomly initialize a linear layer with an input size of 4 and an output size of 5
+    let model = Linear::new(4, 5, false, &mut cx);
+    model.weight.set(weight.clone());
+    // Make an input tensor
+    let a = cx.tensor(4).set(vec![1., 2., 3., 4.]);
+    // Feed tensor through model
+    let b = model.forward(a).retrieve();
+
+    // Execute the graph
+    cx.execute_debug();
+
+    // Print the results
+    println!("B: {:?}", b.data());
+}
+```
+
+Let's break down what's happening:
+
+1.  **`let mut cx = Graph::new();`**: This creates a new computation graph. The graph is the central object in Luminal. It holds all the operations and tensors.
+
+2.  **`let model = Linear::new(4, 5, false, &mut cx);`**: This defines a linear layer from the `luminal_nn` crate. The layer will take a tensor of size 4 as input and produce a tensor of size 5 as output. The operation is added to the graph `cx`.
+
+3.  **`model.weight.set(weight.clone());`**: This sets the weights of the linear layer to random values.
+
+4.  **`let a = cx.tensor(4).set(vec![1., 2., 3., 4.]);`**: This creates a new tensor on the graph with the values `[1.0, 2.0, 3.0, 4.0]`.
+
+5.  **`let b = model.forward(a).retrieve();`**: This applies the linear layer to the input tensor `a`. The `.retrieve()` call marks the tensor `b` as a result that we want to read after the graph is executed. Note that no computation has happened yet. We are just building the graph.
+
+6.  **`cx.execute_debug();`**: This is where the magic happens. The graph is compiled and executed. The `execute_debug` method also prints out debugging information about the graph execution.
+
+7.  **`println!("B: {:?}", b.data());`**: Finally, this prints the data from the output tensor `b`. Since the graph has been executed, `b` now contains the result of the computation.
+
+## Run Llama 3
+
+Luminal can also run large, complex models like Llama 3. Here's how to run the 8B parameter version.
+
+First, navigate to the Llama 3 example directory:
+```bash
+cd examples/llama
+```
+
+Next, run the setup script. This will download the Llama 3 8B model weights.
+```bash
+bash ./setup/setup.sh
+```
+
+Finally, run the model using the appropriate command for your hardware:
+
+```bash
+# For Apple Silicon (M-series Macs)
+cargo run --release --features metal
+
+# For Nvidia GPUs
+cargo run --release --features cuda
+
+# For CPU (not recommended for large models)
+cargo run --release
+```
+
+After the model compiles and loads, it will start generating text.
+
+<Warning>
+  Luminal is not yet fully optimized for CPU execution. Running large models like Llama 3 on a CPU will be very slow.
+</Warning>
